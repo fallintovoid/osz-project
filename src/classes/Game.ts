@@ -136,12 +136,12 @@ export class Game {
 
       let menuAnswer = 0;
       menuAnswer = await this.consoleHelper.openMenu(
-        ["Fight monster", "Open inventory"],
+        ["Fight monster", "Open inventory", "Show fight logs"],
         this.consoleInput
       );
 
       if (menuAnswer === 1) {
-        const hasWon = this.player.fightEnemy(monsters[0]);
+        const hasWon = this.player.fightEnemy(monsters[0], this.currentRoomId);
 
         if (hasWon) {
           room.removeMonster(monsters[0]);
@@ -155,6 +155,8 @@ export class Game {
       } else if (menuAnswer === 2) {
         await this.player.showInventory();
         continue;
+      } else if (menuAnswer === 3) {
+        await this.player.showFightLogs();
       }
     }
   }

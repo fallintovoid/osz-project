@@ -1,4 +1,5 @@
 import { weaponsList } from "../constants/weapons";
+import { ConsoleHelper } from "../lib/ConsoleHelper";
 import ConsoleInput from "../lib/Input";
 import { WeaponName } from "../types/weapon";
 import { Monster } from "./Monster";
@@ -8,18 +9,39 @@ export class Player {
   private health: number;
   private strength: number;
   private weapons: Weapon[];
-  private keysAmount: number;
   private consoleInput: ConsoleInput;
+  private consoleHelper: ConsoleHelper;
+  private fightLogs: string[];
 
   constructor() {
     this.consoleInput = new ConsoleInput();
+    this.consoleHelper = new ConsoleHelper();
     this.health = 100;
-    this.keysAmount = 0;
     this.weapons = [];
+    this.fightLogs = [];
     this.strength = 0;
 
     for (let i = 0; i < this.weapons.length; i++) {
       this.strength += this.weapons[i].getPower();
+    }
+  }
+
+  public async showFightLogs(): Promise<void> {
+    console.clear();
+    let message = "";
+    this.fightLogs.forEach((log) => (message += `${log}\n`));
+
+    this.consoleHelper.sendMessage(
+      message.length > 0 ? message : "No logs yet"
+    );
+
+    const isClose = await this.consoleInput.getInputString(
+      (value) => value === "y",
+      "Close logs (y): "
+    );
+
+    if (isClose === "y") {
+      return;
     }
   }
 
@@ -37,14 +59,6 @@ export class Player {
 
   public getStrength(): number {
     return this.strength;
-  }
-
-  public getKeysAmount(): number {
-    return this.keysAmount;
-  }
-
-  public setKeysAmount(callback: (prev: number) => number): void {
-    this.keysAmount = callback(this.keysAmount);
   }
 
   public addWeapon(weaponName: WeaponName): void {
@@ -84,24 +98,27 @@ export class Player {
     }
   }
 
-  public fightEnemy(monster: Monster): boolean {
-    console.clear();
+  public fightEnemy(monster: Monster, currentRoomId: number): boolean {
     if (monster.getStrength() > this.strength) {
       // Monster stronger than player
-      console.log(
-        `> ${monster.getName()} dealed ${
+      this.fightLogs.push(
+        `(Room ${currentRoomId}) > ${monster.getName()} dealed ${
           monster.getStrength() - this.strength
-        } Damage to Player`
+        } Damage to Player. ${monster.getName()} is still alive`
       );
       this.health -= monster.getStrength() - this.strength;
 
       return false;
     } else {
       // Player stronger than monster
-      console.log(`> Player has killed ${monster.getName()}`);
+      this.fightLogs.push(
+        `(Room ${currentRoomId}) > Player has killed ${monster.getName()}`
+      );
 
       if (this.strength - monster.getStrength() < 50) {
-        console.log(`> ${monster.getName()} dealed 5 Damage to Player`);
+        this.fightLogs.push(
+          `(Room ${currentRoomId}) > ${monster.getName()} dealed 5 Damage to Player`
+        );
         this.health -= 5;
       }
 
@@ -113,7 +130,6 @@ export class Player {
     console.clear();
     console.log("=".repeat(45));
     console.log(`Health Points: ${this.health}`);
-    console.log(`Keys: ${this.keysAmount}`);
     console.log(`Strength: ${this.strength}`);
     console.log("-".repeat(45));
 
@@ -127,15 +143,13 @@ export class Player {
 
     console.log("=".repeat(45));
 
-    let isClose = "";
+    const isClose = await this.consoleInput.getInputString(
+      (value) => value === "y",
+      "Close inventory? (y): "
+    );
 
-    while (isClose !== "y") {
-      isClose = await this.consoleInput.getInputString(
-        (value) => value === "y",
-        "Close inventory? (y): "
-      );
+    if (isClose === "y") {
+      return;
     }
-
-    return;
   }
 }
